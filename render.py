@@ -62,7 +62,7 @@ def render_list(doc: Document, paragraph, list_data):
         current_paragraph._p.addnext(new_paragraph._p)
         current_paragraph = new_paragraph
 
-def create_text_resume(resume_data: Dict[str, Any]) -> str:
+def create_text_resume(resume_data: Dict[str, Any], analysis_data: Dict[str, Any]) -> str:
     """
     Creates a plain text version of the resume.
     
@@ -77,7 +77,8 @@ def create_text_resume(resume_data: Dict[str, Any]) -> str:
     txt_everteam = "\n".join([f"- {item['label']}: {item['details']}" for item in resume_data['everteam']])
     txt_intalio = "\n".join([f"- {item['label']}: {item['details']}" for item in resume_data['intalio']])
 
-    return f"""
+    if analysis_data['seniority'] == 'manager':
+     txt_resume = f"""
 Esteban Felipe
 (904) 516 0350 
 esteban.felipe@gmail.com
@@ -100,7 +101,31 @@ Director of Product Management / VP of Solution Engineering / CTO | Everteam | S
 Senior Solutions Consultant / Product Manager | Intalio | Nov 2008 - Sep 2015 | Palo Alto, CA
 {txt_intalio}
 """
+    else:
+     txt_resume = f"""
+Esteban Felipe
+(904) 516 0350 
+esteban.felipe@gmail.com
 
+PROFESSIONAL SUMMARY
+{resume_data['professional_summary']}
+
+KEY SKILLS
+{txt_skills}
+
+Product Management Leader | 8base | Feb 2022 – Sep 2024 | Miami, FL
+{txt_8base}
+
+Solution Engineering Leader | Appify | May 2021 – Feb 2022 | Campbell, CA
+{txt_appify}
+
+Product Management Leader / Solution Engineering Leader | Everteam | Sep 2015 - Aug 2021 | Boston, MA
+{txt_everteam}
+
+Senior Solutions Consultant / Product Manager | Intalio | Nov 2008 - Sep 2015 | Palo Alto, CA
+{txt_intalio}
+"""        
+    return txt_resume
 def render_resume(resume_data: Dict[str, Any], analysis_data: Dict[str, Any], store_path: str = "/Users/estebanf/Library/CloudStorage/GoogleDrive-esteban.felipe@gmail.com/My Drive/JH 2025") -> None:
     """
     Renders a resume in both DOCX and TXT formats based on the provided data.
@@ -110,7 +135,7 @@ def render_resume(resume_data: Dict[str, Any], analysis_data: Dict[str, Any], st
         analysis_data: Dictionary containing the job analysis data
         store_path: Path where the resume files should be stored
     """
-    template_path = 'resume.docx'
+    template_path = 'resume.docx' if analysis_data['seniority'] == 'manager' else 'resume_contributor.docx'
     doc = Document(template_path)
 
     # Process each paragraph in the template
@@ -141,7 +166,7 @@ def render_resume(resume_data: Dict[str, Any], analysis_data: Dict[str, Any], st
             render_list(doc, paragraph, resume_data['intalio'])
 
     # Create text version of resume
-    str_resume = create_text_resume(resume_data)
+    str_resume = create_text_resume(resume_data,analysis_data)
 
     # Create folder and save files
     folder_name = sanitize_filename(f"{analysis_data['company_name']}-{analysis_data['job_title']}")

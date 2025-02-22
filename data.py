@@ -29,7 +29,11 @@ class CoreCompetency(BaseModel):
 class Accomplishment(BaseModel):
     id: int
     name: str
-    body:str
+    body: str
+
+class AccomplishmentUpdate(BaseModel):
+    name: str
+    body: str
 
 class SkillWithId(BaseModel):
     id: int
@@ -40,6 +44,16 @@ class CoreCompetencyWithId(BaseModel):
     id: int
     name: str
     similarity: Optional[float] = None
+
+class Experience(BaseModel):
+    id: int
+    name: str
+    company: str
+
+class CreateAccomplishment(BaseModel):
+    name: str
+    body: str
+    experience_id: int
 
 router = APIRouter(
     prefix="/api/data",
@@ -255,4 +269,143 @@ async def update_core_competency(competency_id: int, competency: CoreCompetency)
             return CoreCompetencyWithId(id=record["id"], name=record["name"])
     except Exception as e:
         logger.error(f"Error updating core competency: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.put("/accomplishment/{accomplishment_id}", 
+         response_model=Accomplishment,
+         summary="Update an accomplishment",
+         description="Update an accomplishment's name and body, and recalculate its embeddings")
+async def update_accomplishment(
+    accomplishment_id: int = Path(..., description="The ID of the accomplishment to update"),
+    accomplishment: AccomplishmentUpdate = None
+) -> Accomplishment:
+    """
+    Update an accomplishment and recalculate its embeddings.
+    
+    Parameters:
+    - accomplishment_id: The ID of the accomplishment to update
+    - accomplishment: The new accomplishment data
+    
+    Returns:
+    - Updated accomplishment with its ID
+    """
+    try:
+        # Calculate new embeddings for the accomplishment body
+        embedding = get_embeddings(accomplishment.body)
+        
+        # Update the accomplishment in Neo4j
+        query = """
+        MATCH (acc:Accomplishment)
+        WHERE id(acc) = $accomplishment_id
+        SET acc.name = $name,
+            acc.body = $body,
+            acc.accomplishment_embedding = $embedding
+        RETURN id(acc) as id, acc.name as name, acc.body as body
+        """
+        
+        with driver.session() as session:
+            result = session.run(
+                query,
+                accomplishment_id=accomplishment_id,
+                name=accomplishment.name,
+                body=accomplishment.body,
+                embedding=embedding
+            )
+            record = result.single()
+            
+            if not record:
+                raise HTTPException(status_code=404, detail="Accomplishment not found")
+                
+            return Accomplishment(
+                id=record["id"],
+                name=record["name"],
+                body=record["body"]
+            )
+            
+    except Exception as e:
+        logger.error(f"Error updating accomplishment: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/experiences",
+         response_model=List[Experience],
+         summary="Get all experiences",
+         description="Retrieve all experience nodes from the database")
+async def get_experiences() -> List[Experience]:
+    """
+    Get all experiences from the database.
+    
+    Returns:
+    - List of experiences with their IDs, names, and companies
+    """
+    query = """
+    MATCH (exp:Experience)
+    RETURN id(exp) as id, exp.name as name, exp.company as company
+    ORDER BY exp.company, exp.name
+    """
+    try:
+        with driver.session() as session:
+            result = session.run(query)
+            return [Experience(id=record["id"], 
+                             name=record["name"], 
+                             company=record["company"]) 
+                   for record in result]
+    except Exception as e:
+        logger.error(f"Error getting experiences: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/accomplishment",
+          response_model=Accomplishment,
+          summary="Create a new accomplishment",
+          description="Create a new accomplishment node and link it to an experience")
+async def create_accomplishment(accomplishment: CreateAccomplishment) -> Accomplishment:
+    """
+    Create a new accomplishment and link it to an experience.
+    
+    Parameters:
+    - accomplishment: CreateAccomplishment object containing name, body, and experience_id
+    
+    Returns:
+    - Created accomplishment with its ID
+    """
+    try:
+        # Calculate embeddings for the accomplishment body
+        embedding = get_embeddings(accomplishment.body)
+        
+        # Create the accomplishment and relationship in a single transaction
+        query = """
+        MATCH (exp:Experience)
+        WHERE id(exp) = $experience_id
+        CREATE (acc:Accomplishment {
+            name: $name,
+            body: $body,
+            accomplishment_embedding: $embedding
+        })
+        CREATE (acc)<-[:ACHIEVED]-(exp)
+        RETURN id(acc) as id, acc.name as name, acc.body as body
+        """
+        
+        with driver.session() as session:
+            result = session.run(
+                query,
+                experience_id=accomplishment.experience_id,
+                name=accomplishment.name,
+                body=accomplishment.body,
+                embedding=embedding
+            )
+            record = result.single()
+            
+            if not record:
+                raise HTTPException(
+                    status_code=404, 
+                    detail=f"Experience with id {accomplishment.experience_id} not found"
+                )
+                
+            return Accomplishment(
+                id=record["id"],
+                name=record["name"],
+                body=record["body"]
+            )
+            
+    except Exception as e:
+        logger.error(f"Error creating accomplishment: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e)) 

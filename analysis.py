@@ -46,6 +46,11 @@ Extract structured information from the following job post, including the compan
 - Look for **specific deliverables, KPIs, or expectations** set by the company.
 - Capture strategic priorities related to **market growth, product success, customer engagement, and operational excellence.**
 
+#### **6. Success Criteria**
+- Decide if the opportunity is for a manager-level or a contributor role. A manager-level position will include in the title words like "Director", "VP", "Vice President", "Chief" or "Head" and imply that most of the role is about leading a team. A contributor role may have words like "Senior", "Lead", "Principal", "Staff", "Group" in the title and even have some people-management responsabilities, but most of the requirements are about individual contributions.
+- if in doubt, assume it is a contributor role.
+- you can only use the words "manager" or "contributor" in the seniority field.
+
 ### **Instructions:**
 - Analyze the following job post. Be comprehensive and detailed in your analysis, ensuring that you are capturing as much relevant information as possible. More entries are better than less:
   

@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Literal
+
 
 class Analysis(BaseModel):
     company_name: str = Field(description="The name of the company")
@@ -9,6 +10,7 @@ class Analysis(BaseModel):
     expected_experiences: list[str] = Field(description="The prior work history, education, or certifications needed to be eligible for the role")
     most_relevant_keywords: list[str] = Field(description="The sorted list of most relevant keywords from the job post")
     success_criteria: list[str] = Field(description="The sorted list of success criteria for the job post")
+    seniority: Literal["manager", "contributor"] = Field(description="The seniority level of the role") # type: ignore
 
 class Skill(BaseModel):
     skill: str = Field(description="The professional skill to include in the resume. It should be 3 words or less")

@@ -245,26 +245,48 @@ async def process_job_post(clean_url: str = None, processed_html: str = None, an
         logger.info("Professional summary saved to inputs/06_professional_summary.json")
         
         # Assemble resume data
-        resume_data = {
-            "professional_summary": professional_summary.summary,
-            "key_skills": [s.skill for s in key_skills.skills],
-            "eight_base": [
-                {"label": acc["title"], "details": acc["body"]} 
-                for acc in accomplishments["8base"][:5]
-            ],
-            "appify": [
-                {"label": acc["title"], "details": acc["body"]} 
-                for acc in accomplishments["Appify"][:2]
-            ],
-            "everteam": [
-                {"label": acc["title"], "details": acc["body"]} 
-                for acc in accomplishments["Everteam"][:4]
-            ],
-            "intalio": [
-                {"label": acc["title"], "details": acc["body"]} 
-                for acc in accomplishments["Intalio"][:4]
-            ]
-        }
+        if analysis_result.seniority == "manager":
+            resume_data = {
+                "professional_summary": professional_summary.summary,
+                "key_skills": [s.skill for s in key_skills.skills],
+                "eight_base": [
+                    {"label": acc["title"], "details": acc["body"]} 
+                    for acc in accomplishments["8base"][:5]
+                ],
+                "appify": [
+                    {"label": acc["title"], "details": acc["body"]} 
+                    for acc in accomplishments["Appify"][:2]
+                ],
+                "everteam": [
+                    {"label": acc["title"], "details": acc["body"]} 
+                    for acc in accomplishments["Everteam"][:4]
+                ],
+                "intalio": [
+                    {"label": acc["title"], "details": acc["body"]} 
+                    for acc in accomplishments["Intalio"][:4]
+                ]
+            }
+        else:
+            resume_data = {
+                "professional_summary": professional_summary.summary,
+                "key_skills": [s.skill for s in key_skills.skills],
+                "eight_base": [
+                    {"label": acc["title"], "details": acc["body"]} 
+                    for acc in accomplishments["8base"][:6]
+                ],
+                "appify": [
+                    {"label": acc["title"], "details": acc["body"]} 
+                    for acc in accomplishments["Appify"][:2]
+                ],
+                "everteam": [
+                    {"label": acc["title"], "details": acc["body"]} 
+                    for acc in accomplishments["Everteam"][:5]
+                ],
+                "intalio": [
+                    {"label": acc["title"], "details": acc["body"]} 
+                    for acc in accomplishments["Intalio"][:5]
+                ]
+            }            
         
         # Improve accomplishment labels
         improved_labels = await improve_accomplishments_labels(analysis_result, resume_data)
@@ -287,7 +309,8 @@ async def process_job_post(clean_url: str = None, processed_html: str = None, an
         # Assemble analysis data for render
         analysis_data = {
             "company_name": analysis_result.company_name,
-            "job_title": analysis_result.job_title
+            "job_title": analysis_result.job_title,
+            "seniority": analysis_result.seniority
         }
         
         # Render the resume
